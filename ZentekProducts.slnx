@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="D:\Projects\Alts\zentek\src\ZentekProducts.Api\ZentekProducts.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="D:\Projects\Alts\zentek\tests\ZentekProducts.Tests\ZentekProducts.Tests.csproj" />
+    <Project Path="D:\Projects\Alts\zentek\tests\ZentekProducts.IntegrationTests\ZentekProducts.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

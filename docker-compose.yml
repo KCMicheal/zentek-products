@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: zentek-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Password123!
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Password123! -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: ./src/ZentekProducts.Api
+      dockerfile: Dockerfile
+    container_name: zentek-api
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=ZentekProducts;User Id=sa;Password=Password123!;TrustServerCertificate=True;
+      - JwtSettings__Secret=YourSuperSecretKeyThatIsAtLeast32CharactersLong!
+      - JwtSettings__Issuer=ZentekProductsApi
+      - JwtSettings__Audience=ZentekProductsClient
+      - JwtSettings__ExpirationMinutes=60
+      - Auth__Username=admin
+      - Auth__Password=admin123
+    ports:
+      - "5000:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  client:
+    build:
+      context: ./src/ZentekProducts.Client
+      dockerfile: Dockerfile
+    container_name: zentek-client
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+volumes:
+  sqlserver_data:

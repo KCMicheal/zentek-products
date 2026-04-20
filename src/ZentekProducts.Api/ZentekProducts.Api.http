@@ -1,0 +1,6 @@
+@ZentekProducts.Api_HostAddress = http://localhost:5253
+
+GET {{ZentekProducts.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
