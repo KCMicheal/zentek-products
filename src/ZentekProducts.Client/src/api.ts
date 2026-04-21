@@ -1,4 +1,4 @@
-import { Product, CreateProductDto, LoginDto, TokenDto } from './types';
+import type { Product, CreateProductDto, LoginDto, TokenDto } from './types';
 
 const API_URL = 'http://localhost:5000';
 
@@ -38,7 +38,21 @@ class ApiService {
     });
 
     if (!response.ok) {
-      throw new Error(`Request failed: ${response.statusText}`);
+      const contentType = response.headers.get('content-type') ?? '';
+      let details = '';
+      try {
+        if (contentType.includes('application/json')) {
+          const json = (await response.json()) as unknown;
+          details = JSON.stringify(json);
+        } else {
+          details = await response.text();
+        }
+      } catch {
+        // ignore parse errors, fall back to status text
+      }
+
+      const msg = details ? `Request failed (${response.status}): ${details}` : `Request failed (${response.status}): ${response.statusText}`;
+      throw new Error(msg);
     }
 
     if (response.status === 204) {

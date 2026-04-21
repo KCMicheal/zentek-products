@@ -13,11 +13,17 @@ public class AuthService
 
     public AuthService(IOptions<JwtSettings> jwtSettings)
     {
-        _jwtSettings = jwtSettings.Value;
+        if (jwtSettings == null) throw new ArgumentNullException(nameof(jwtSettings));
+        _jwtSettings = jwtSettings.Value ?? throw new ArgumentException("JwtSettings value is null", nameof(jwtSettings));
+        if (string.IsNullOrWhiteSpace(_jwtSettings.Secret))
+            throw new InvalidOperationException("JWT secret is not configured. Set JwtSettings:Secret in configuration.");
     }
 
     public TokenDto GenerateToken(string username)
     {
+        if (string.IsNullOrWhiteSpace(_jwtSettings.Secret))
+            throw new InvalidOperationException("JWT secret is not configured. Set JwtSettings:Secret in configuration.");
+
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 

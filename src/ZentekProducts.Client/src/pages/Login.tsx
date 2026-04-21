@@ -20,8 +20,9 @@ export function Login({ onLogin }: LoginProps) {
       const token = await api.login({ username, password });
       api.setToken(token.token);
       onLogin();
-    } catch {
-      setError('Invalid credentials');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Login failed';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -30,7 +31,8 @@ export function Login({ onLogin }: LoginProps) {
   return (
     <div className="login-container">
       <form className="login-form" onSubmit={handleSubmit}>
-        <h1>Zentek Products</h1>
+        <h1 className="login-title">Zentek Products</h1>
+        <br/>
         <h2>Sign In</h2>
 
         {error && <div className="error">{error}</div>}

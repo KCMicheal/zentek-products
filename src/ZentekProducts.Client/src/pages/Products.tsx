@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Product, CreateProductDto } from '../types';
+import { useCallback, useEffect, useState } from 'react';
+import type { Product, CreateProductDto } from '../types';
 import { api } from '../api';
 
 export function Products() {
@@ -8,18 +8,17 @@ export function Products() {
   const [error, setError] = useState('');
   const [colourFilter, setColourFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState<CreateProductDto>({
+  const [formData, setFormData] = useState<Omit<CreateProductDto, 'price' | 'stockQty'> & { price: string; stockQty: string }>({
     name: '',
     description: '',
-    price: 0,
+    price: '',
     colour: '',
     category: '',
-    stockQty: 0,
+    stockQty: '',
     isActive: true,
   });
 
-  const fetchProducts = async () => {
-    setLoading(true);
+  const fetchProducts = useCallback(async () => {
     try {
       const data = await api.getProducts(colourFilter || undefined);
       setProducts(data);
@@ -28,26 +27,35 @@ export function Products() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [colourFilter]);
 
   useEffect(() => {
-    fetchProducts();
-  }, [colourFilter]);
+    const id = window.setTimeout(() => {
+      void fetchProducts();
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [fetchProducts]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.createProduct(formData);
+      const dto: CreateProductDto = {
+        ...formData,
+        price: Number(formData.price),
+        stockQty: Number(formData.stockQty),
+      };
+      await api.createProduct(dto);
       setShowForm(false);
       setFormData({
         name: '',
         description: '',
-        price: 0,
+        price: '',
         colour: '',
         category: '',
-        stockQty: 0,
+        stockQty: '',
         isActive: true,
       });
+      setLoading(true);
       fetchProducts();
     } catch {
       setError('Failed to create product');
@@ -62,7 +70,7 @@ export function Products() {
   return (
     <div className="products-page">
       <header>
-        <h1>Products</h1>
+        <h1>Zentek Products</h1>
         <button onClick={handleLogout}>Logout</button>
       </header>
 
@@ -71,7 +79,10 @@ export function Products() {
           type="text"
           placeholder="Filter by colour..."
           value={colourFilter}
-          onChange={(e) => setColourFilter(e.target.value)}
+          onChange={(e) => {
+            setLoading(true);
+            setColourFilter(e.target.value);
+          }}
         />
         <button onClick={() => setShowForm(!showForm)}>
           {showForm ? 'Cancel' : 'Add Product'}
@@ -97,7 +108,7 @@ export function Products() {
             type="number"
             placeholder="Price"
             value={formData.price}
-            onChange={(e) => setFormData({ ...formData, price: +e.target.value })}
+            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
             required
           />
           <input
@@ -117,7 +128,7 @@ export function Products() {
             type="number"
             placeholder="Stock Qty"
             value={formData.stockQty}
-            onChange={(e) => setFormData({ ...formData, stockQty: +e.target.value })}
+            onChange={(e) => setFormData({ ...formData, stockQty: e.target.value })}
             required
           />
           <button type="submit">Create</button>

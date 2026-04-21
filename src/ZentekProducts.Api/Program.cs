@@ -12,12 +12,21 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        var jwtSettings = new JwtSettings();
-        builder.Configuration.GetSection("JwtSettings").Bind(jwtSettings);
-        builder.Services.AddSingleton(jwtSettings);
+        builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+        var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>() ?? new JwtSettings();
 
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        {
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            if (connectionString?.Contains("localhost") == true)
+            {
+                options.UseSqlite("Data Source=products.db");
+            }
+            else
+            {
+                options.UseSqlServer(connectionString);
+            }
+        });
 
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -33,6 +42,22 @@ public class Program
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
                 };
             });
+
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("DevClient", policy =>
+            {
+                policy
+                    .SetIsOriginAllowed(origin =>
+                    {
+                        if (string.IsNullOrWhiteSpace(origin)) return false;
+                        if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
+                        return uri.Host is "localhost" or "127.0.0.1";
+                    })
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
+        });
 
         builder.Services.AddAuthorization();
         builder.Services.AddScoped<IProductService, ProductService>();
@@ -80,6 +105,7 @@ public class Program
             app.UseSwaggerUI();
         }
 
+        app.UseCors("DevClient");
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
