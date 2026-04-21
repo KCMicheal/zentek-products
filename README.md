@@ -77,23 +77,23 @@ Notes:
 
 ```mermaid
 flowchart LR
-    Client[React Client<br/>Dev: 5173 / Docker: 3000] -->|HTTP/REST| ApiGateway[API<br/>Port 5000]
+    Client[React Client\nDev: 5173 / Docker: 3000] -->|HTTP/REST| ApiGateway[API\nPort 5000]
     
     subgraph "Products Service"
-        ApiGateway -->|JWT Auth| ProductsAPI[Products API<br/>.NET 8]
-        ProductsAPI -->|EF Core| SQL[(SQL Server (Compose)<br/>Port 1433)]
+        ApiGateway -->|JWT Auth| ProductsAPI[Products API\n.NET 8]
+        ProductsAPI -->|EF Core| SQL[(SQL Server (Compose)\nPort 1433)]
     end
     
     subgraph "Event Bus"
-        EventBus[Event Bus<br/>Kafka/RabbitMQ]
+        EventBus[Event Bus\nKafka/RabbitMQ]
     end
     
     ProductsAPI -->|ProductCreated Event| EventBus
     
     subgraph "Other Services"
-        OrdersAPI[Orders Service<br/>.NET]
-        PaymentsAPI[Payments Service<br/>.NET]
-        NotificationAPI[Notification Service<br/>Node.js]
+        OrdersAPI[Orders Service\n.NET]
+        PaymentsAPI[Payments Service\n.NET]
+        NotificationAPI[Notification Service\nNode.js]
     end
     
     EventBus -->|Process Order| OrdersAPI
