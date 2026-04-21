@@ -13,7 +13,8 @@ services:
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
-      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Password123! -Q "SELECT 1" || exit 1
+      # ODBC Driver 18 encrypts by default; -C trusts the self-signed cert in dev
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Password123! -C -Q "SELECT 1" || exit 1
       interval: 10s
       timeout: 3s
       retries: 5
@@ -33,6 +34,11 @@ services:
       - Auth__Password=admin123
     ports:
       - "5000:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     depends_on:
       sqlserver:
         condition: service_healthy
@@ -41,11 +47,33 @@ services:
     build:
       context: ./src/ZentekProducts.Client
       dockerfile: Dockerfile
+      args:
+        # Use nginx reverse proxy for API calls
+        VITE_API_URL: "/api"
     container_name: zentek-client
     ports:
       - "3000:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+
+  # Optional: run the Vite dev server in a container (hot reload).
+  # Start with: docker compose --profile dev up --build
+  client-dev:
+    profiles: ["dev"]
+    image: node:20-alpine
+    container_name: zentek-client-dev
+    working_dir: /app
+    environment:
+      VITE_API_URL: "http://localhost:5000"
+    volumes:
+      - ./src/ZentekProducts.Client:/app
+    command: sh -lc "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"
+    ports:
+      - "5173:5173"
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   sqlserver_data:

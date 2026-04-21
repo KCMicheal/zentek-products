@@ -10,7 +10,9 @@ A .NET 8 Web API for managing products with JWT authentication.
   - `GET /api/products` - List all products
   - `GET /api/products?colour={colour}` - Filter by colour
   - `POST /api/products` - Create product
-- **SQL Server** database with Entity Framework Core
+- **Database** with Entity Framework Core
+  - Local dev defaults to **SQLite** (`src/ZentekProducts.Api/products.db`)
+  - Docker Compose uses **SQL Server**
 - **Unit Tests** (xUnit with InMemory provider)
 - **Integration Tests** (HTTP client tests)
 - **React Frontend** with Vite
@@ -20,23 +22,27 @@ A .NET 8 Web API for managing products with JWT authentication.
 
 ### Local Development
 
-1. Start SQL Server:
-```bash
-docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Password123!" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
-```
-
-2. Run the API:
+1. Run the API:
 ```bash
 cd src/ZentekProducts.Api
 dotnet run
 ```
 
-3. Run the frontend:
+2. Run the frontend (Vite dev server):
 ```bash
 cd src/ZentekProducts.Client
-pnpm install
-pnpm dev
+npm install
+npm run dev
 ```
+
+3. Open the app:
+- API (Swagger): `http://localhost:5000/swagger/index.html`
+- Client: `http://localhost:5173`
+
+#### Notes
+
+- **CORS**: the API is configured for local development so the Vite dev server on localhost can call it.
+- **If login fails**, the client surfaces the actual error (CORS/network vs 401) rather than always showing “Invalid credentials”.
 
 ### Docker Compose
 
@@ -47,6 +53,21 @@ docker compose up --build
 - API: http://localhost:5000
 - Frontend: http://localhost:3000
 
+#### Hybrid (Docker + Vite dev server)
+
+If you want a single Docker command that starts the API + DB + a containerized Vite dev server (hot reload):
+
+```bash
+docker compose --profile dev up --build
+```
+
+- API: `http://localhost:5000`
+- Client (Vite): `http://localhost:5173`
+
+Notes:
+- The compose file includes an **API healthcheck**, and the clients wait until the API is healthy before starting.
+- The production Docker client is served by nginx on port 3000 and proxies `/api/*` to the API container.
+
 ### Default Credentials
 
 - Username: `admin`
@@ -56,11 +77,11 @@ docker compose up --build
 
 ```mermaid
 flowchart LR
-    Client[React Client<br/>Port 3000] -->|HTTP/REST| ApiGateway[API Gateway<br/>Port 5000]
+    Client[React Client<br/>Dev: 5173 / Docker: 3000] -->|HTTP/REST| ApiGateway[API<br/>Port 5000]
     
     subgraph "Products Service"
         ApiGateway -->|JWT Auth| ProductsAPI[Products API<br/>.NET 8]
-        ProductsAPI -->|EF Core| SQL[(SQL Server<br/>Port 1433)]
+        ProductsAPI -->|EF Core| SQL[(SQL Server (Compose)<br/>Port 1433)]
     end
     
     subgraph "Event Bus"

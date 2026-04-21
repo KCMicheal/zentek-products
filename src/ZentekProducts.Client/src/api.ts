@@ -1,6 +1,8 @@
 import type { Product, CreateProductDto, LoginDto, TokenDto } from './types';
 
-const API_URL = 'http://localhost:5000';
+// In dev (host): defaults to the API running on localhost:5000
+// In docker (nginx): set VITE_API_URL=/api so requests go through the reverse proxy
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
 
 class ApiService {
   private token: string | null = null;
