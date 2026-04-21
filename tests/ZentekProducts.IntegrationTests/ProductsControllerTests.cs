@@ -1,19 +1,22 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
 using ZentekProducts.Api.Models.DTOs;
 
 namespace ZentekProducts.IntegrationTests;
 
-public class ProductsControllerTests
+public class ProductsControllerTests : IClassFixture<CustomWebApplicationFactory>
 {
+    private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public ProductsControllerTests()
+    public ProductsControllerTests(CustomWebApplicationFactory factory)
     {
-        _client = new HttpClient { BaseAddress = new Uri("http://localhost:5000") };
+        _factory = factory;
+        _client = factory.CreateClient();
     }
 
-    [Fact(Skip = "Requires API running on localhost:5000")]
+    [Fact]
     public async Task Health_Get_ReturnsOk()
     {
         var response = await _client.GetAsync("/health");
@@ -21,7 +24,7 @@ public class ProductsControllerTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    [Fact(Skip = "Requires API running on localhost:5000")]
+    [Fact]
     public async Task Auth_Login_WithValidCredentials_ReturnsToken()
     {
         var loginDto = new LoginDto { Username = "admin", Password = "admin123" };
@@ -33,7 +36,7 @@ public class ProductsControllerTests
         Assert.NotNull(token.Token);
     }
 
-    [Fact(Skip = "Requires API running on localhost:5000")]
+    [Fact]
     public async Task Auth_Login_WithInvalidCredentials_ReturnsUnauthorized()
     {
         var loginDto = new LoginDto { Username = "wrong", Password = "wrong" };
@@ -42,7 +45,7 @@ public class ProductsControllerTests
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact(Skip = "Requires API running on localhost:5000")]
+    [Fact]
     public async Task Products_GetAll_WithoutAuth_ReturnsUnauthorized()
     {
         var response = await _client.GetAsync("/api/products");
@@ -50,7 +53,7 @@ public class ProductsControllerTests
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact(Skip = "Requires API running on localhost:5000")]
+    [Fact]
     public async Task Products_GetAll_WithValidAuth_ReturnsProducts()
     {
         var loginResponse = await _client.PostAsJsonAsync("/api/auth/login",
@@ -65,7 +68,7 @@ public class ProductsControllerTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    [Fact(Skip = "Requires API running on localhost:5000")]
+    [Fact]
     public async Task Products_Create_WithValidAuth_ReturnsCreated()
     {
         var loginResponse = await _client.PostAsJsonAsync("/api/auth/login",
